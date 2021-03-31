@@ -1,5 +1,5 @@
 {
-    "data3DSpace": [
+    "data3DSpace":
         {
             "particles": [
                 {
@@ -27,5 +27,5 @@
                 }
             ]
         }
-    ]
+
 }
