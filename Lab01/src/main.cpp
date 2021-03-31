@@ -21,6 +21,10 @@
 #include <vector>			//Standard template library class
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include <json.hpp>
+
+using json = nlohmann::json;
+
 //glm
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
