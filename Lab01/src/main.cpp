@@ -23,6 +23,8 @@
 #include <GL/glut.h>
 #include <json.hpp>
 
+//#include <Parser.h>
+
 using json = nlohmann::json;
 
 //glm
@@ -42,6 +44,10 @@ using namespace std;
 
 bool needRedisplay=false;
 ShapesC* sphere;
+
+vector<glm::vec3> arrowPos;
+vector<glm::vec3> particlePos;
+vector<float> particleCharge;
 
 //shader program ID
 GLuint shaderProgram;
@@ -111,6 +117,21 @@ void Arm(glm::mat4 m)
 	sphere->Render();
 }
 
+void ArmLess(glm::mat4 m, float scale)
+{
+//let's use instancing
+	m=glm::translate(m,glm::vec3(0,0.5,0.0));
+	m=glm::scale(m,glm::vec3(scale, scale, scale));
+	sphere->SetModel(m);
+	//now the normals
+	glm::mat3 modelViewN=glm::mat3(view*m);
+	modelViewN= glm::transpose(glm::inverse(modelViewN));
+	sphere->SetModelViewN(modelViewN);
+	sphere->Render();
+
+	
+}
+
 
 
 //the main rendering function
@@ -141,8 +162,18 @@ void RenderObjects()
 		for (int j=-range;j<range;j++)
 		{
 			glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(4*i,0,4*j));
-			Arm(m);
+			//Arm(m);
 		}
+	}
+
+	for (int i = 0; i < arrowPos.size(); i++){
+		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(arrowPos[i][0], arrowPos[i][1], arrowPos[i][2]));
+		ArmLess(m, 0.3);
+	}
+
+	for (int i =0; i < particlePos.size(); i++){
+		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(particlePos[i][0], particlePos[i][1], particlePos[i][2]));
+		ArmLess(m, 0.6);
 	}
 }
 	
@@ -269,6 +300,49 @@ void InitializeProgram(GLuint *program)
 	light.SetLdToShader(glGetUniformLocation(*program,"light.ld"));
 	light.SetLsToShader(glGetUniformLocation(*program,"light.ls"));
 	light.SetLposToShader(glGetUniformLocation(*program,"light.lPos"));
+
+	string fileName = "data/SampleData.json";
+	//Read JSON file
+    std::ifstream i(fileName, std::ifstream::binary);
+    json j;
+    i >> j;
+	
+
+	cout << j["data3DSpace"] << "\n";
+	printf("\n-----------\n");
+
+	cout << j["data3DSpace"]["mapPositions"]["vertex1"] << "\n";
+
+	for (int i = 0; i < j["data3DSpace"]["counts"]["particuleCount"]; i++){
+		float x = j["data3DSpace"]["particles"][i]["position"][0];
+		float y = j["data3DSpace"]["particles"][i]["position"][1];
+		float z = j["data3DSpace"]["particles"][i]["position"][2];
+		
+		float charge = j["data3DSpace"]["particles"][i]["relative_charge"];
+		particlePos.push_back(glm::vec3(x, y, z));
+		particleCharge.push_back(charge);
+	}
+	
+	for (int i = 1; i < j["data3DSpace"]["counts"]["mapPosCount"] + 1; i++){
+		glm::vec3 newPos;
+		float x = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][0];
+		float y = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][1];
+		float z = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][2];
+		arrowPos.push_back(glm::vec3(x, y, z));
+	}
+	
+
+
+
+    string s = j.dump();
+    printf("Printing the Json file:\n");
+	printf(s.c_str());
+	printf("\n-----------\n");
+	
+
+
+	
+
 }
 
 void InitShapes(ShaderParamsC *params)
