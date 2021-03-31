@@ -1,0 +1,3 @@
+﻿cl : command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  main.cpp
+  Lab01.vcxproj -> C:\Users\User\Desktop\Repos\CS434\FinalProject\Lab01\Debug\Lab01.exe
