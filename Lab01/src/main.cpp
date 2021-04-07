@@ -23,7 +23,7 @@
 #include <GL/glut.h>
 #include <json.hpp>
 
-//#include <Parser.h>
+#include "SceneParser.h"
 
 using json = nlohmann::json;
 
@@ -307,7 +307,8 @@ void InitializeProgram(GLuint *program)
     json j;
     i >> j;
 	
-
+	//SceneParser parser = SceneParser();
+	//parser.parserJsons(fileName);
 	cout << j["data3DSpace"] << "\n";
 	printf("\n-----------\n");
 

@@ -1,31 +1,36 @@
 {
     "data3DSpace":
         {
+            "counts":
+                {
+                    "particuleCount": 3,
+                    "mapPosCount": 8
+                },
             "particles": [
                 {
-                    "position": [1,0,0],
+                    "position": [5,3,0],
                     "relative_charge": 1
                 },
                 {
-                    "position": [0,1,0],
+                    "position": [0,3,4],
                     "relative_charge": -1
                 },{
-                    "position": [0,0,1],
+                    "position": [1,0,2],
                     "relative_charge": 0
                 }
             ],
-            "mapPositions": [
+            "mapPositions": 
                 {
                     "vertex1":[0,0,0],
                     "vertex2":[1,0,0],
-                    "vertex3":[0,1,0],
+                    "vertex3":[0,3,0],
                     "vertex4":[0,0,1],
                     "vertex5":[1,1,0],
                     "vertex6":[1,0,1],
                     "vertex7":[0,1,1],
                     "vertex8":[1,1,1]
                 }
-            ]
+            
         }
 
 }
