@@ -27,6 +27,7 @@
 
 using json = nlohmann::json;
 
+
 //glm
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -46,8 +47,8 @@ bool needRedisplay=false;
 ShapesC* sphere;
 
 vector<glm::vec3> arrowPos;
-vector<glm::vec3> particlePos;
-vector<float> particleCharge;
+vector<glm::vec3> particlesPos;
+vector<float> particleCharges;
 
 //shader program ID
 GLuint shaderProgram;
@@ -70,7 +71,8 @@ public:
 	GLint shParameter;			//shinenness material
 } params;
 
-
+//Todo: Add openMP parrelization
+//Todo: make Powerpoint for presentation
 LightC light;
 
 
@@ -116,8 +118,43 @@ void Arm(glm::mat4 m)
 	sphere->SetModelViewN(modelViewN);
 	sphere->Render();
 }
+//Todo: Make arrow object correct shape
+//Todo: Add arrow coloring option for mag
+void arrow(glm::mat4 m, float scale, glm::vec3 dir)
+{
+	//let's use instancing
+	m = glm::translate(m, glm::vec3(0, 0.5, 0.0));
+	m = glm::scale(m, glm::vec3(0.2f, 0.2f, 0.2f));
+	sphere->SetModel(m);
+	//now the normals
+	glm::mat3 modelViewN = glm::mat3(view * m);
+	modelViewN = glm::transpose(glm::inverse(modelViewN));
+	sphere->SetModelViewN(modelViewN);
+	sphere->SetKd(glm::vec3(0.5, 0.5, 0.5));
+	sphere->Render();
 
-void ArmLess(glm::mat4 m, float scale)
+	
+
+	
+	//m = glm::scale(m, glm::vec3(5.0f, 5.0f, 5.0f));
+	//m = glm::translate(m, glm::vec3(0.0, 1.5, 0.0));
+	m = glm::rotate(m, (float)(atan2(dir[1], dir[0]) * 180 / M_PI) + 90.0f, glm::vec3(0, 0, 1));
+	//m = glm::rotate(m, 90.0f, glm::cross(dir, glm::vec3(0, 1, 0)));
+	//m = glm::rotate(m, -20.0f * ftime, glm::vec3(0.0, 0.0, 1.0));
+	//m = glm::translate(m, glm::vec3(dir[0]*5, dir[1]*5, dir[2]*5));
+	sphere->SetModel(glm::scale(m, glm::vec3(1.0f, 2.5f, 1.0f)));
+	//sphere->SetModel(glm::scale(m, dir));
+
+	modelViewN = glm::mat3(view * m);
+	modelViewN = glm::transpose(glm::inverse(modelViewN));
+	sphere->SetModelViewN(modelViewN);
+	sphere->SetKd(glm::vec3(0.5, 0.5, 0.5));
+	sphere->Render();
+
+
+}
+
+void particle(glm::mat4 m, float scale)
 {
 //let's use instancing
 	m=glm::translate(m,glm::vec3(0,0.5,0.0));
@@ -127,10 +164,38 @@ void ArmLess(glm::mat4 m, float scale)
 	glm::mat3 modelViewN=glm::mat3(view*m);
 	modelViewN= glm::transpose(glm::inverse(modelViewN));
 	sphere->SetModelViewN(modelViewN);
+	sphere->SetKd(glm::vec3(0.5, 0.5, 0.5));
 	sphere->Render();
-
+	
 	
 }
+
+void particle(glm::mat4 m, float scale, float charge)
+{
+	//let's use instancing
+	m = glm::translate(m, glm::vec3(0, 0.5, 0.0));
+	m = glm::scale(m, glm::vec3(scale, scale, scale));
+	sphere->SetModel(m);
+	//now the normals
+	glm::mat3 modelViewN = glm::mat3(view * m);
+	modelViewN = glm::transpose(glm::inverse(modelViewN));
+	sphere->SetModelViewN(modelViewN);
+	if (charge > 0) {
+		sphere->SetKd(glm::vec3(1, 0, 0));
+	}
+	else if (charge < 0) {
+		sphere->SetKd(glm::vec3(0, 0, 1));
+	}
+	else {
+		sphere->SetKd(glm::vec3(1, 1, 1));
+	}
+	
+	sphere->Render();
+	
+
+
+}
+
 
 
 
@@ -147,7 +212,7 @@ void RenderObjects()
 	//view=glm::lookAt(glm::vec3(25*sin(ftime/40.f),5.f,15*cos(ftime/40.f)),//eye
 	//			     glm::vec3(0,0,0),  //destination
 	//			     glm::vec3(0,1,0)); //up
-	view=glm::lookAt(glm::vec3(10.f,5.f,10.f),//eye
+	view=glm::lookAt(glm::vec3(0.f,0.f,10.f),//eye
 				     glm::vec3(0,0,0),  //destination
 				     glm::vec3(0,1,0)); //up
 
@@ -165,15 +230,24 @@ void RenderObjects()
 			//Arm(m);
 		}
 	}
-
+	//Todo: Remove arrow too close to the viewer
+	//Render the positional Arrows
 	for (int i = 0; i < arrowPos.size(); i++){
 		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(arrowPos[i][0], arrowPos[i][1], arrowPos[i][2]));
-		ArmLess(m, 0.3);
-	}
+		glm::vec3 fieldVec = glm::vec3(0.0, 0.0, 0.0);
+		for (int n = 0; n < particlesPos.size(); n++) {
+			//Electric Field Equation:
+			glm::vec3 dir = arrowPos[i] - particlesPos[n];
+			float scale = 32.0;//Normally this would be 1/(4 pi Eo) in physics. Adjust to get the correct scale for viewing
+			fieldVec += (scale * particleCharges[n] / pow(glm::length(dir), 2)) * glm::normalize(dir);
 
-	for (int i =0; i < particlePos.size(); i++){
-		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(particlePos[i][0], particlePos[i][1], particlePos[i][2]));
-		ArmLess(m, 0.6);
+		}
+		arrow(m, 0.3, glm::normalize(fieldVec));
+	}
+	//Render the particles
+	for (int i =0; i < particlesPos.size(); i++){
+		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(particlesPos[i][0], particlesPos[i][1], particlesPos[i][2]));
+		particle(m, 0.6, particleCharges[i]);
 	}
 }
 	
@@ -217,6 +291,7 @@ void Kbd(unsigned char a, int x, int y)
 //special keyboard callback
 void SpecKbdPress(int a, int x, int y)
 {
+	//Todo: Add movement through space.
    	switch(a)
 	{
  	  case GLUT_KEY_LEFT  : 
@@ -268,6 +343,7 @@ void SpecKbdRelease(int a, int x, int y)
 
 void Mouse(int button,int state,int x,int y)
 {
+	//Todo: Add ability to move particles, Research how CAD packages do it
 	cout << "Location is " << "[" << x << "'" << y << "]" << endl;
 }
 
@@ -306,7 +382,7 @@ void InitializeProgram(GLuint *program)
     std::ifstream i(fileName, std::ifstream::binary);
     json j;
     i >> j;
-	
+	//HACK: Parser.h didn't work, added directly to main. 
 	//SceneParser parser = SceneParser();
 	//parser.parserJsons(fileName);
 	cout << j["data3DSpace"] << "\n";
@@ -314,17 +390,21 @@ void InitializeProgram(GLuint *program)
 
 	cout << j["data3DSpace"]["mapPositions"]["vertex1"] << "\n";
 
+	//Parses Charges
 	for (int i = 0; i < j["data3DSpace"]["counts"]["particuleCount"]; i++){
 		float x = j["data3DSpace"]["particles"][i]["position"][0];
 		float y = j["data3DSpace"]["particles"][i]["position"][1];
 		float z = j["data3DSpace"]["particles"][i]["position"][2];
 		
 		float charge = j["data3DSpace"]["particles"][i]["relative_charge"];
-		particlePos.push_back(glm::vec3(x, y, z));
-		particleCharge.push_back(charge);
+		particlesPos.push_back(glm::vec3(x, y, z));
+		particleCharges.push_back(charge);
 	}
 	
-	for (int i = 1; i < j["data3DSpace"]["counts"]["mapPosCount"] + 1; i++){
+	//Parses ArrowVectors
+	//Todo: Add Multiple Point addition
+	//Todo: Make Vectors a category instead of individual data.
+	for (int i = 0; i < j["data3DSpace"]["counts"]["mapPosCount"]; i++){
 		glm::vec3 newPos;
 		float x = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][0];
 		float y = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][1];
