@@ -8,27 +8,28 @@
                 },
             "particles": [
                 {
-                    "position": [5,3,0],
+                    "position": [5,0,0],
                     "relative_charge": 1
                 },
                 {
-                    "position": [0,3,4],
+                    "position": [-5,0,0],
                     "relative_charge": -1
                 },{
-                    "position": [1,0,2],
-                    "relative_charge": 0
+                    "position": [-5,2,0],
+                    "relative_charge": -1
                 }
             ],
             "mapPositions": 
                 {
-                    "vertex1":[0,0,0],
-                    "vertex2":[1,0,0],
-                    "vertex3":[0,3,0],
-                    "vertex4":[0,0,1],
-                    "vertex5":[1,1,0],
-                    "vertex6":[1,0,1],
-                    "vertex7":[0,1,1],
-                    "vertex8":[1,1,1]
+                    "vertex0":[2, 3,0],
+                    "vertex1":[4, 3,0],
+                    "vertex2":[5,3,0],
+                    "vertex3":[0,-1,0],
+                    "vertex4":[0,0,0],
+                    "vertex5":[5,1,0],
+                    "vertex6":[1,2,0],
+                    "vertex7":[0,3,0]
+
                 }
             
         }
