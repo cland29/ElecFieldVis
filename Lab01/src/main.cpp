@@ -50,6 +50,10 @@ vector<glm::vec3> arrowPos;
 vector<glm::vec3> particlesPos;
 vector<float> particleCharges;
 
+glm::vec3 eye = glm::vec3(0.f, 0.f, 10.f);
+glm::vec3 eyeDir = glm::vec3(0.f, 0.f, -10.f);
+glm::vec3 eyeVel = glm::vec3(0.f, 0.f, 0.f);
+
 //shader program ID
 GLuint shaderProgram;
 GLfloat ftime=0.f;
@@ -212,14 +216,15 @@ void RenderObjects()
 	//view=glm::lookAt(glm::vec3(25*sin(ftime/40.f),5.f,15*cos(ftime/40.f)),//eye
 	//			     glm::vec3(0,0,0),  //destination
 	//			     glm::vec3(0,1,0)); //up
-	view=glm::lookAt(glm::vec3(0.f,0.f,10.f),//eye
-				     glm::vec3(0,0,0),  //destination
+	view=glm::lookAt(eye,//eye
+				     eye + eyeDir,  //destination
 				     glm::vec3(0,1,0)); //up
-
+	eye = eye + eyeVel;
 	glUniformMatrix4fv(params.viewParameter,1,GL_FALSE,glm::value_ptr(view));
 //set the light
 	static glm::vec4 pos;
 	pos.x=20*sin(ftime/12);pos.y=-10;pos.z=20*cos(ftime/12);pos.w=1;
+	
 	light.SetPos(pos);
 	light.SetShaders();
 	for (int i=-range;i<range;i++)
@@ -294,22 +299,26 @@ void SpecKbdPress(int a, int x, int y)
 	//Todo: Add movement through space.
    	switch(a)
 	{
- 	  case GLUT_KEY_LEFT  : 
-		  {
-			  break;
-		  }
-	  case GLUT_KEY_RIGHT : 
-		  {
+		case GLUT_KEY_LEFT:
+		{
+			eyeVel.x = -0.1;
 			break;
-		  }
- 	  case GLUT_KEY_DOWN    : 
-		  {
+		}
+		case GLUT_KEY_RIGHT:
+		{
+			eyeVel.x = 0.1;
 			break;
-		  }
-	  case GLUT_KEY_UP  :
-		  {
+		}
+		case GLUT_KEY_DOWN:
+		{
+			eyeVel.z = 0.1;
 			break;
-		  }
+		}
+		case GLUT_KEY_UP:
+		{
+			eyeVel.z = -0.1;
+			break;
+		}
 
 	}
 	glutPostRedisplay();
@@ -320,22 +329,26 @@ void SpecKbdRelease(int a, int x, int y)
 {
 	switch(a)
 	{
- 	  case GLUT_KEY_LEFT  : 
-		  {
-			  break;
-		  }
-	  case GLUT_KEY_RIGHT : 
-		  {
-			  break;
-		  }
- 	  case GLUT_KEY_DOWN  : 
-		  {
+		case GLUT_KEY_LEFT:
+		{
+			eyeVel.x = 0.0;
 			break;
-		  }
-	  case GLUT_KEY_UP  :
-		  {
+		}
+		case GLUT_KEY_RIGHT:
+		{
+			eyeVel.x = 0.0;
 			break;
-		  }
+		}
+		case GLUT_KEY_DOWN:
+		{
+			eyeVel.z = 0.0;
+			break;
+		}
+		case GLUT_KEY_UP:
+		{
+			eyeVel.z = 0.0;
+			break;
+		}
 	}
 	glutPostRedisplay();
 }
