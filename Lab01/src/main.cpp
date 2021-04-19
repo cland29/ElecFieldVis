@@ -51,6 +51,7 @@ vector<glm::vec3> arrowPos;
 vector<glm::vec3> particlesPos;
 vector<float> particleCharges;
 
+
 glm::vec3 eye = glm::vec3(0.f, 0.f, 10.f);
 glm::vec3 eyeDir = glm::vec3(0.f, 0.f, -10.f);
 glm::vec3 eyeVel = glm::vec3(0.f, 0.f, 0.f);
@@ -236,10 +237,15 @@ void RenderObjects()
 			//Arm(m);
 		}
 	}
+
+
 	//Todo: Remove arrow too close to the viewer
 	//Render the positional Arrows
+	int size = arrowPos.size();
+	vector<glm::vec3> vecFields(size, glm::vec3(0.0, 0.0, 0.0));
+#pragma omp parallel for private(n)
 	for (int i = 0; i < arrowPos.size(); i++){
-		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(arrowPos[i][0], arrowPos[i][1], arrowPos[i][2]));
+		//glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(arrowPos[i][0], arrowPos[i][1], arrowPos[i][2]));
 		glm::vec3 fieldVec = glm::vec3(0.0, 0.0, 0.0);
 		for (int n = 0; n < particlesPos.size(); n++) {
 			//Electric Field Equation:
@@ -248,9 +254,16 @@ void RenderObjects()
 			fieldVec += (scale * particleCharges[n] / pow(glm::length(dir), 2)) * glm::normalize(dir);
 
 		}
-		arrow(m, 0.3, glm::normalize(fieldVec));
+		vecFields[i] = glm::normalize(fieldVec);
+		
+	}
+
+	for (int i = 0; i < arrowPos.size(); i++) {
+		glm::mat4 m = glm::translate(glm::mat4(1.0), glm::vec3(arrowPos[i][0], arrowPos[i][1], arrowPos[i][2]));
+		arrow(m, 0.3, vecFields[i]);
 	}
 	//Render the particles
+
 	for (int i =0; i < particlesPos.size(); i++){
 		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(particlesPos[i][0], particlesPos[i][1], particlesPos[i][2]));
 		particle(m, 0.6, particleCharges[i]);
@@ -435,9 +448,9 @@ void InitializeProgram(GLuint *program)
 		int upperZ = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["zOffset"][1];
 		int stepZ = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["zOffset"][2];
 		
-		for (int z = lowerZ; z < upperZ; z += stepZ) {
-			for (int y = lowerY; y < upperY; y += stepY) {
-				for (int x = lowerX; x < upperX; x += stepX) {
+		for (int z = lowerZ; z <= upperZ; z += stepZ) {
+			for (int y = lowerY; y <= upperY; y += stepY) {
+				for (int x = lowerX; x <= upperX; x += stepX) {
 					glm::vec3 newPos;
 					float xPos = x + j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["centerPos"][0];
 					float yPos = y + j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["centerPos"][1];
