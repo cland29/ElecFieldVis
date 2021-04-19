@@ -26,7 +26,8 @@
 #include "SceneParser.h"
 
 using json = nlohmann::json;
-
+//OpenMP
+#include <omp.h>
 
 //glm
 #include <glm/glm.hpp>
@@ -296,7 +297,7 @@ void Kbd(unsigned char a, int x, int y)
 //special keyboard callback
 void SpecKbdPress(int a, int x, int y)
 {
-	//Todo: Add movement through space.
+	//Todo: upgrade movement through space.
    	switch(a)
 	{
 		case GLUT_KEY_LEFT:
@@ -415,14 +416,37 @@ void InitializeProgram(GLuint *program)
 	}
 	
 	//Parses ArrowVectors
-	//Todo: Add Multiple Point addition
 	//Todo: Make Vectors a category instead of individual data.
-	for (int i = 0; i < j["data3DSpace"]["counts"]["mapPosCount"]; i++){
+	for (int i = 0; i < j["data3DSpace"]["counts"]["vertCount"]; i++){
 		glm::vec3 newPos;
-		float x = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][0];
-		float y = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][1];
-		float z = j["data3DSpace"]["mapPositions"]["vertex" + to_string(i)][2];
+		float x = j["data3DSpace"]["mapPositions"]["vertex"][i]["position"][0];
+		float y = j["data3DSpace"]["mapPositions"]["vertex"][i]["position"][1];
+		float z = j["data3DSpace"]["mapPositions"]["vertex"][i]["position"][2];
 		arrowPos.push_back(glm::vec3(x, y, z));
+	}
+	for (int i = 0; i < j["data3DSpace"]["counts"]["vertBoxCount"]; i++) {
+		int lowerX = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["xOffset"][0];
+		int upperX = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["xOffset"][1];
+		int stepX = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["xOffset"][2];
+		int lowerY = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["yOffset"][0];
+		int upperY = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["yOffset"][1];
+		int stepY = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["yOffset"][2];
+		int lowerZ = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["zOffset"][0];
+		int upperZ = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["zOffset"][1];
+		int stepZ = j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["zOffset"][2];
+		
+		for (int z = lowerZ; z < upperZ; z += stepZ) {
+			for (int y = lowerY; y < upperY; y += stepY) {
+				for (int x = lowerX; x < upperX; x += stepX) {
+					glm::vec3 newPos;
+					float xPos = x + j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["centerPos"][0];
+					float yPos = y + j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["centerPos"][1];
+					float zPos = z + j["data3DSpace"]["mapPositions"]["vertexBoxes"][i]["centerPos"][2];
+					arrowPos.push_back(glm::vec3(xPos, yPos, zPos));
+				}
+			}
+		}
+		
 	}
 	
 
