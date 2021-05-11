@@ -47,6 +47,9 @@ using namespace std;
 bool needRedisplay=false;
 ShapesC* sphere;
 
+//hack: Smooth Demo mode constant allows to show smooth movement of particles
+
+
 vector<glm::vec3> arrowPos;
 vector<glm::vec3> particlesPos;
 vector<float> particleCharges;
@@ -55,6 +58,8 @@ vector<float> particleCharges;
 glm::vec3 eye = glm::vec3(0.f, 0.f, 10.f);
 glm::vec3 eyeDir = glm::vec3(0.f, 0.f, -10.f);
 glm::vec3 eyeVel = glm::vec3(0.f, 0.f, 0.f);
+
+
 
 //shader program ID
 GLuint shaderProgram;
@@ -202,7 +207,36 @@ void particle(glm::mat4 m, float scale, float charge)
 
 }
 
+bool getParticleIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 particlePos, float particleRadius, glm::vec3& outIntersectionVector) {
+	glm::vec3 rayDirNorm = glm::normalize(rayDir);
+	float t;
+	double xDif = rayOrigin[0] - particlePos[0];
+	double yDif = rayOrigin[1] - particlePos[1];
+	double zDif = rayOrigin[2] - particlePos[2];
 
+	double b = 2 * (rayDirNorm.x * xDif + rayDirNorm.y * yDif + rayDirNorm.z * zDif);
+	double c = xDif * xDif + yDif * yDif + zDif * zDif - particleRadius * particleRadius;
+
+	double discriminant = b * b - 4 * c;
+
+	//TODO: Deal with case of being inside the sphere or in front of it
+	if (discriminant > 0) {
+		t = (-1 * b - sqrt(discriminant)) / 2;
+		outIntersectionVector = rayDirNorm * t + rayOrigin;
+		return true;
+	}
+	else if (discriminant == 0) {
+		t = -1 * b / 2;
+		outIntersectionVector = rayDirNorm * t + rayOrigin;
+		return true;
+	}
+	else {
+		return false;
+	}
+
+
+
+}
 
 
 //the main rendering function
@@ -249,7 +283,7 @@ void RenderObjects()
 		glm::vec3 fieldVec = glm::vec3(0.0, 0.0, 0.0);
 		for (int n = 0; n < particlesPos.size(); n++) {
 			//Electric Field Equation:
-			glm::vec3 dir = arrowPos[i] - particlesPos[n];
+			glm::vec3 dir = arrowPos[i] - (particlesPos[n] + glm::vec3(4 * sin(ftime / 3), 4 * cos(ftime / 3), 0));
 			float scale = 32.0;//Normally this would be 1/(4 pi Eo) in physics. Adjust to get the correct scale for viewing
 			fieldVec += (scale * particleCharges[n] / pow(glm::length(dir), 2)) * glm::normalize(dir);
 
@@ -265,7 +299,7 @@ void RenderObjects()
 	//Render the particles
 
 	for (int i =0; i < particlesPos.size(); i++){
-		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(particlesPos[i][0], particlesPos[i][1], particlesPos[i][2]));
+		glm::mat4 m=glm::translate(glm::mat4(1.0),glm::vec3(particlesPos[i][0] + 4 * sin(ftime / 3), particlesPos[i][1] + 4 * cos(ftime / 3), particlesPos[i][2]));
 		particle(m, 0.6, particleCharges[i]);
 	}
 }
@@ -297,8 +331,6 @@ void Kbd(unsigned char a, int x, int y)
 	  case 'G': {sphere->SetKd(glm::vec3(0,1,0));break;}
 	  case 'b': 
 	  case 'B': {sphere->SetKd(glm::vec3(0,0,1));break;}
-	  case 'w': 
-	  case 'W': {sphere->SetKd(glm::vec3(0.7,0.7,0.7));break;}
 	  case '+': {sphere->SetSh(sh+=1);break;}
 	  case '-': {sphere->SetSh(sh-=1);if (sh<1) sh=1;break;}
 	}
@@ -315,25 +347,34 @@ void SpecKbdPress(int a, int x, int y)
 	{
 		case GLUT_KEY_LEFT:
 		{
-			eyeVel.x = -0.1;
+			eyeVel.x = -0.2;
 			break;
 		}
 		case GLUT_KEY_RIGHT:
 		{
-			eyeVel.x = 0.1;
+			eyeVel.x = 0.2;
 			break;
 		}
 		case GLUT_KEY_DOWN:
 		{
-			eyeVel.z = 0.1;
+			eyeVel.z = 0.2;
 			break;
 		}
 		case GLUT_KEY_UP:
 		{
-			eyeVel.z = -0.1;
+			eyeVel.z = -0.2;
 			break;
 		}
-
+		case GLUT_KEY_PAGE_UP:
+		{
+			eyeVel.y = 0.2;
+			break;
+		}
+		case GLUT_KEY_PAGE_DOWN:
+		{
+			eyeVel.y = -0.2;
+			break;
+		}
 	}
 	glutPostRedisplay();
 }
@@ -363,6 +404,16 @@ void SpecKbdRelease(int a, int x, int y)
 			eyeVel.z = 0.0;
 			break;
 		}
+		case GLUT_KEY_PAGE_UP:
+		{
+			eyeVel.y = 0.0;
+			break;
+		}
+		case GLUT_KEY_PAGE_DOWN:
+		{
+			eyeVel.y = 0.0;
+			break;
+		}
 	}
 	glutPostRedisplay();
 }
@@ -370,7 +421,17 @@ void SpecKbdRelease(int a, int x, int y)
 
 void Mouse(int button,int state,int x,int y)
 {
+	x = 400-x;
+	glm::vec3 rayOrgin = eye;
+	glm::vec3 rayDir = glm::vec3(x - 800 / 2, y - 800 / 2, eye[2] + ((double)800) / (2 * sin(90 / 2 * M_PI / 180)));;
+	glm::vec3 outRay;
 	//Todo: Add ability to move particles, Research how CAD packages do it
+	for (int i = 0; i < particlesPos.size(); i++) {
+		if (getParticleIntersection(rayOrgin, rayDir, particlesPos[i], 1.0, outRay)) {
+			printf("shoot it!");
+		}
+	}
+	
 	cout << "Location is " << "[" << x << "'" << y << "]" << endl;
 }
 
@@ -416,6 +477,8 @@ void InitializeProgram(GLuint *program)
 	printf("\n-----------\n");
 
 	cout << j["data3DSpace"]["mapPositions"]["vertex1"] << "\n";
+	
+	
 
 	//Parses Charges
 	for (int i = 0; i < j["data3DSpace"]["counts"]["particuleCount"]; i++){
@@ -423,11 +486,14 @@ void InitializeProgram(GLuint *program)
 		float y = j["data3DSpace"]["particles"][i]["position"][1];
 		float z = j["data3DSpace"]["particles"][i]["position"][2];
 		
+
 		float charge = j["data3DSpace"]["particles"][i]["relative_charge"];
 		particlesPos.push_back(glm::vec3(x, y, z));
 		particleCharges.push_back(charge);
+
+		
 	}
-	
+
 	//Parses ArrowVectors
 	//Todo: Make Vectors a category instead of individual data.
 	for (int i = 0; i < j["data3DSpace"]["counts"]["vertCount"]; i++){
